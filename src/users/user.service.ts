@@ -1,74 +1,23 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { In, Repository } from 'typeorm';
+import { Repository } from 'typeorm';
 import { User } from './user.entity';
 import { CreateUserDto } from './dtos/createUser.dto';
 import { UpdateUserDto } from './dtos/updateUser.dto';
-import { GoodwillService } from '../goodwill/goodwill.service';
-import { UserResponse } from '../interfaces';
-import { LikeService } from '../likes/like.service';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
-    private readonly goodwillService: GoodwillService,
-    private readonly likeService: LikeService,
   ) {}
 
-  async activateUser(id: string) {
-    await this.userRepository.update(id, { isActive: true });
+  async findByEmail(email: string): Promise<User | null> {
+    return this.userRepository.findOne({ where: { email } });
   }
 
-  async findByPhoneNumber(phoneNumber: string): Promise<UserResponse> {
-    const user = await this.userRepository.findOne({ where: { phoneNumber } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    const goodwill = await this.goodwillService.calculateGoodwillScore(user);
-    const topThreeQualities = await this.likeService.getTopThreeQualities(user);
-    return {
-      id: user.id,
-      name: user.name,
-      profilePicture: user.profilePicture,
-      linkedinUrl: user.linkedinUrl,
-      instagramUrl: user.instagramUrl,
-      xUrl: user.xUrl,
-      facebookUrl: user.facebookUrl,
-      goodwill: {
-        score: goodwill.score,
-        level: goodwill.level,
-      },
-      topThreeQualities: topThreeQualities,
-    };
-  }
-
-  async findDbUserByPhoneNumber(phoneNumber: string): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { phoneNumber } });
-
-    return user;
-  }
-
-  async findById(id: string): Promise<UserResponse> {
-    const user = await this.userRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    const goodwill = await this.goodwillService.calculateGoodwillScore(user);
-    const { remainingLikes, likesRefreshedAt } =
-      await this.likeService.getRemainingLikesAndRefreshDate(user);
-    const topThreeQualities = await this.likeService.getTopThreeQualities(user);
-    return {
-      ...user,
-      goodwill,
-      remainingLikes,
-      likesRefreshedAt,
-      topThreeQualities,
-    };
-  }
-
-  async findDbUserById(id: string): Promise<User> {
+  async findById(id: string): Promise<User> {
     const user = await this.userRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('User not found');
@@ -76,40 +25,34 @@ export class UserService {
     return user;
   }
 
-  async create(
-    createUserDto: CreateUserDto,
-    isActive: boolean = false,
-  ): Promise<User> {
+  async create(createUserDto: CreateUserDto): Promise<User> {
+    const hashedPassword = await bcrypt.hash(createUserDto.password, 10);
+
     const user = this.userRepository.create({
-      phoneNumber: createUserDto.phoneNumber,
+      email: createUserDto.email,
+      password: hashedPassword,
       name: createUserDto.name,
       profilePicture: createUserDto.profilePicture,
-      linkedinUrl: createUserDto.linkedinUrl,
-      instagramUrl: createUserDto.instagramUrl,
-      xUrl: createUserDto.xUrl,
-      facebookUrl: createUserDto.facebookUrl,
       refreshToken: createUserDto.refreshToken,
-      isActive: isActive,
+      isActive: true,
     });
+
     return this.userRepository.save(user);
   }
 
-  async update(
-    id: string,
-    updateUserDto: UpdateUserDto,
-  ): Promise<UserResponse> {
+  async update(id: string, updateUserDto: UpdateUserDto): Promise<User> {
     const user = await this.findById(id);
-    if (!user) {
-      throw new NotFoundException('User not found');
-    }
-    await this.userRepository.update(id, {
+
+    const updateData: Partial<User> = {
       name: updateUserDto.name || user.name,
       profilePicture: updateUserDto.profilePicture || user.profilePicture,
-      linkedinUrl: updateUserDto.linkedinUrl || user.linkedinUrl,
-      instagramUrl: updateUserDto.instagramUrl || user.instagramUrl,
-      xUrl: updateUserDto.xUrl || user.xUrl,
-      facebookUrl: updateUserDto.facebookUrl || user.facebookUrl,
-    });
+    };
+
+    if (updateUserDto.password) {
+      updateData.password = await bcrypt.hash(updateUserDto.password, 10);
+    }
+
+    await this.userRepository.update(id, updateData);
     return this.findById(id);
   }
 
@@ -120,17 +63,15 @@ export class UserService {
     await this.userRepository.update(userId, { refreshToken });
   }
 
-  async findByPhoneNumbers(phoneNumbers: string[]): Promise<UserResponse[]> {
-    const users = await this.userRepository.find({
-      where: { phoneNumber: In(phoneNumbers) },
-    });
+  async validatePassword(user: User, password: string): Promise<boolean> {
+    return bcrypt.compare(password, user.password);
+  }
 
-    const topThreeQualitiesPerUser =
-      await this.likeService.getTopThreeQualitiesPerUser(users);
+  async activateUser(id: string): Promise<void> {
+    await this.userRepository.update(id, { isActive: true });
+  }
 
-    return users.map((user) => ({
-      ...user,
-      topThreeQualities: topThreeQualitiesPerUser[user.phoneNumber],
-    }));
+  async deactivateUser(id: string): Promise<void> {
+    await this.userRepository.update(id, { isActive: false });
   }
 }

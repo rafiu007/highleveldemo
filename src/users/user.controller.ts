@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Get,
-  Put,
-  Body,
-  UseGuards,
-  Param,
-  Post,
-} from '@nestjs/common';
+import { Controller, Get, Put, Body, UseGuards, Param } from '@nestjs/common';
 import { UserService } from './user.service';
 import { JwtGuard } from '../guards/jwt.guard';
 import { UserId } from 'src/auth/decorators/user-id.decorator';
@@ -17,26 +9,21 @@ import { UpdateUserDto } from './dtos/updateUser.dto';
 export class UserController {
   constructor(private userService: UserService) {}
 
-  @Get('/self')
-  async getSelf(@UserId() userId: string) {
+  @Get('/me')
+  async getMe(@UserId() userId: string) {
     return this.userService.findById(userId);
   }
 
-  @Get(':phoneNumber')
-  async getUserByPhoneNumber(@Param('phoneNumber') phoneNumber: string) {
-    return this.userService.findByPhoneNumber(phoneNumber);
+  @Get(':id')
+  async getUserById(@Param('id') id: string) {
+    return this.userService.findById(id);
   }
 
-  @Put('profile')
+  @Put('/me')
   async updateProfile(
     @Body() updateData: UpdateUserDto,
     @UserId() userId: string,
   ) {
     return this.userService.update(userId, updateData);
-  }
-
-  @Post('search')
-  async searchUsersByPhoneNumbers(@Body() body: { phoneNumbers: string[] }) {
-    return this.userService.findByPhoneNumbers(body.phoneNumbers);
   }
 }

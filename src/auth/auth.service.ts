@@ -1,20 +1,23 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  UnauthorizedException,
+  ConflictException,
+} from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UserService } from '../users/user.service';
 import { User } from '../users/user.entity';
-import { TwilioService } from '../twilio/twilio.service';
 import { CreateUserDto } from '../users/dtos/createUser.dto';
+import { LoginDto } from './dto/login.dto';
 
 @Injectable()
 export class AuthService {
   constructor(
     private userService: UserService,
     private jwtService: JwtService,
-    private twilioService: TwilioService,
   ) {}
 
-  async generateTokens(user: User, newUser: boolean = false) {
-    const payload = { sub: user.id, phone: user.phoneNumber };
+  async generateTokens(user: User) {
+    const payload = { sub: user.id, email: user.email };
 
     const [accessToken, refreshToken] = await Promise.all([
       this.jwtService.signAsync(payload, {
@@ -23,7 +26,7 @@ export class AuthService {
       }),
       this.jwtService.signAsync(payload, {
         secret: process.env.JWT_REFRESH_SECRET,
-        expiresIn: '7d',
+        expiresIn: '30d',
       }),
     ]);
 
@@ -34,14 +37,9 @@ export class AuthService {
       refreshToken,
       user: {
         id: user.id,
-        phoneNumber: user.phoneNumber,
+        email: user.email,
         name: user.name,
         profilePicture: user.profilePicture,
-        linkedinUrl: user.linkedinUrl,
-        instagramUrl: user.instagramUrl,
-        xUrl: user.xUrl,
-        facebookUrl: user.facebookUrl,
-        newUser,
       },
     };
   }
@@ -53,7 +51,7 @@ export class AuthService {
       });
       return payload;
     } catch {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid access token');
     }
   }
 
@@ -63,60 +61,52 @@ export class AuthService {
         secret: process.env.JWT_REFRESH_SECRET,
       });
 
-      const user = await this.userService.findDbUserById(payload.sub);
+      const user = await this.userService.findById(payload.sub);
       if (!user || user.refreshToken !== refreshToken) {
-        throw new UnauthorizedException();
+        throw new UnauthorizedException('Invalid refresh token');
       }
 
-      return this.generateTokens(user, false);
+      return this.generateTokens(user);
     } catch {
-      throw new UnauthorizedException();
+      throw new UnauthorizedException('Invalid refresh token');
     }
   }
 
   async signup(createUserDto: CreateUserDto) {
-    const existingUser = await this.userService.findByPhoneNumber(
-      createUserDto.phoneNumber,
+    const existingUser = await this.userService.findByEmail(
+      createUserDto.email,
     );
     if (existingUser) {
-      throw new UnauthorizedException('Phone number already registered');
+      throw new ConflictException('Email already registered');
     }
 
-    const user = await this.userService.create({
-      ...createUserDto,
-      refreshToken: null,
-    });
+    const user = await this.userService.create(createUserDto);
     return this.generateTokens(user);
   }
 
-  async sendVerificationCode(phoneNumber: string) {
-    await this.twilioService.sendVerificationCode(phoneNumber);
-    return { message: 'Verification code sent' };
+  async login(loginDto: LoginDto) {
+    const user = await this.userService.findByEmail(loginDto.email);
+    if (!user) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    const isPasswordValid = await this.userService.validatePassword(
+      user,
+      loginDto.password,
+    );
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Invalid credentials');
+    }
+
+    if (!user.isActive) {
+      throw new UnauthorizedException('Account is inactive');
+    }
+
+    return this.generateTokens(user);
   }
 
-  async verifyAndSignup(phoneNumber: string, code: string) {
-    const isValid = await this.twilioService.verifyCode(phoneNumber, code);
-
-    if (!isValid) {
-      throw new UnauthorizedException('Invalid verification code');
-    }
-
-    // Check if user already exists
-    const existingUser =
-      await this.userService.findDbUserByPhoneNumber(phoneNumber);
-    if (existingUser) {
-      await this.userService.activateUser(existingUser.id);
-      return this.generateTokens(existingUser, false);
-    }
-
-    const user = await this.userService.create(
-      {
-        phoneNumber,
-        refreshToken: null,
-      },
-      true,
-    );
-
-    return this.generateTokens(user, true);
+  async logout(userId: string) {
+    await this.userService.updateRefreshToken(userId, null);
+    return { message: 'Logged out successfully' };
   }
 }

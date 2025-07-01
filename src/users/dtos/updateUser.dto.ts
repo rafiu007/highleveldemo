@@ -1,4 +1,4 @@
-import { IsString, IsOptional } from 'class-validator';
+import { IsString, IsOptional, MinLength } from 'class-validator';
 
 export class UpdateUserDto {
   @IsString()
@@ -11,21 +11,6 @@ export class UpdateUserDto {
 
   @IsString()
   @IsOptional()
-  linkedinUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  instagramUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  xUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  facebookUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  refreshToken?: string;
+  @MinLength(6)
+  password?: string;
 }

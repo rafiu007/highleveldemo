@@ -13,7 +13,11 @@ export class User {
   id: string;
 
   @Column({ unique: true })
-  phoneNumber: string;
+  email: string;
+
+  @Column()
+  @Exclude()
+  password: string;
 
   @Column({ nullable: true })
   name: string;
@@ -22,22 +26,10 @@ export class User {
   profilePicture: string;
 
   @Column({ nullable: true })
-  linkedinUrl: string;
-
-  @Column({ nullable: true })
-  instagramUrl: string;
-
-  @Column({ nullable: true })
-  xUrl: string;
-
-  @Column({ nullable: true })
-  facebookUrl: string;
-
-  @Column({ nullable: true })
   @Exclude()
   refreshToken: string;
 
-  @Column({ nullable: false, default: false })
+  @Column({ nullable: false, default: true })
   isActive: boolean;
 
   @CreateDateColumn()
