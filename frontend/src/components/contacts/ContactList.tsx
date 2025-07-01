@@ -153,7 +153,7 @@ export const ContactList: React.FC<ContactListProps> = ({
       {contactsLoading ? (
         <Grid container spacing={2}>
           {[...Array(6)].map((_, index) => (
-            <Grid key={index} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Grid item xs={12} sm={6} md={4} key={index}>
               <Card>
                 <CardContent>
                   <Skeleton variant="circular" width={40} height={40} />
@@ -168,7 +168,7 @@ export const ContactList: React.FC<ContactListProps> = ({
       ) : (
         <Grid container spacing={2}>
           {displayContacts.map((contact) => (
-            <Grid key={contact.id} size={{ xs: 12, sm: 6, md: 4 }}>
+            <Grid item xs={12} sm={6} md={4} key={contact.id}>
               <Card sx={{ height: '100%' }}>
                 <CardContent>
                   <Box
