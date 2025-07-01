@@ -1,7 +1,12 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  forwardRef,
+  Inject,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { ContactEvent } from './contact-event.entity';
+import { ContactEvent, ContactEventType } from './contact-event.entity';
 import { CreateContactEventDto } from './dtos/create-contact-event.dto';
 import { UpdateContactEventDto } from './dtos/update-contact-event.dto';
 import { ContactService } from '../contacts/contact.service';
@@ -11,8 +16,34 @@ export class ContactEventService {
   constructor(
     @InjectRepository(ContactEvent)
     private readonly contactEventRepository: Repository<ContactEvent>,
+    @Inject(forwardRef(() => ContactService))
     private readonly contactService: ContactService,
   ) {}
+
+  /**
+   * Create a system-generated event for contact history tracking
+   */
+  async createSystemEvent(
+    contactId: string,
+    workspaceId: string,
+    eventType: ContactEventType,
+    description: string,
+    userId: string,
+    metadata?: Record<string, any>,
+  ): Promise<ContactEvent> {
+    const contactEvent = this.contactEventRepository.create({
+      contactId,
+      workspaceId,
+      eventType,
+      description,
+      eventDate: new Date(),
+      createdBy: userId,
+      isSystemGenerated: true,
+      metadata: metadata || {},
+    });
+
+    return this.contactEventRepository.save(contactEvent);
+  }
 
   async create(
     createContactEventDto: CreateContactEventDto,

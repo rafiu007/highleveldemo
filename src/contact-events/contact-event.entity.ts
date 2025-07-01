@@ -11,12 +11,18 @@ import { Contact } from '../contacts/contact.entity';
 import { Workspace } from '../workspace/workspace.entity';
 
 export enum ContactEventType {
+  // User-initiated events
   CALL = 'call',
   EMAIL = 'email',
   MEETING = 'meeting',
   NOTE = 'note',
   SMS = 'sms',
   OTHER = 'other',
+
+  // System-generated events for contact history
+  CREATED = 'created',
+  UPDATED = 'updated',
+  DELETED = 'deleted',
 }
 
 @Entity('contact_events')
@@ -45,6 +51,12 @@ export class ContactEvent {
 
   @Column()
   createdBy: string; // User ID who created the event
+
+  @Column({ type: 'boolean', default: false })
+  isSystemGenerated: boolean; // Flag to identify system vs user events
+
+  @Column({ type: 'jsonb', nullable: true })
+  metadata: Record<string, any>; // Store additional data like field changes
 
   @ManyToOne(() => Contact, (contact) => contact.events, {
     onDelete: 'CASCADE',
