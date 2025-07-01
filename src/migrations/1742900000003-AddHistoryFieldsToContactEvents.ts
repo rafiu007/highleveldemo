@@ -22,28 +22,45 @@ export class AddHistoryFieldsToContactEvents1742900000003
       ADD VALUE IF NOT EXISTS 'deleted'
     `);
 
-    // Add new columns
-    await queryRunner.query(`
-      ALTER TABLE "contact_events" 
-      ADD COLUMN "isSystemGenerated" boolean NOT NULL DEFAULT false
+    // Check if isSystemGenerated column exists before adding it
+    const isSystemGeneratedExists = await queryRunner.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name='contact_events' AND column_name='isSystemGenerated'
     `);
 
-    await queryRunner.query(`
-      ALTER TABLE "contact_events" 
-      ADD COLUMN "metadata" jsonb
+    if (isSystemGeneratedExists.length === 0) {
+      await queryRunner.query(`
+        ALTER TABLE "contact_events" 
+        ADD COLUMN "isSystemGenerated" boolean NOT NULL DEFAULT false
+      `);
+    }
+
+    // Check if metadata column exists before adding it
+    const metadataExists = await queryRunner.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name='contact_events' AND column_name='metadata'
     `);
+
+    if (metadataExists.length === 0) {
+      await queryRunner.query(`
+        ALTER TABLE "contact_events" 
+        ADD COLUMN "metadata" jsonb
+      `);
+    }
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {
     // Remove new columns
     await queryRunner.query(`
       ALTER TABLE "contact_events" 
-      DROP COLUMN "metadata"
+      DROP COLUMN IF EXISTS "metadata"
     `);
 
     await queryRunner.query(`
       ALTER TABLE "contact_events" 
-      DROP COLUMN "isSystemGenerated"
+      DROP COLUMN IF EXISTS "isSystemGenerated"
     `);
 
     // Note: PostgreSQL doesn't support removing enum values easily
