@@ -1,6 +1,6 @@
-# 🧠 Contacts Management System
+# 🧠 HighLevel Contacts Management System
 
-A multi-tenant contacts management web application built with NestJS, TypeORM, and PostgreSQL. This system supports multiple organizations with isolated data and comprehensive contact management features.
+A full-stack multi-tenant contacts management web application built with NestJS backend, Next.js frontend, TypeORM, and PostgreSQL. This system supports multiple organizations with isolated data and comprehensive contact management features.
 
 ## 🎯 Features
 
@@ -38,21 +38,31 @@ Workspaces (Organizations)
 
 ### Technology Stack
 
-- **Backend**: NestJS (Node.js framework)
+**Backend:**
+
+- **Framework**: NestJS (Node.js framework)
 - **Database**: PostgreSQL with TypeORM
 - **Authentication**: JWT tokens (access + refresh)
 - **Validation**: Class-validator decorators
 - **API**: RESTful endpoints with proper HTTP status codes
 
+**Frontend:**
+
+- **Framework**: Next.js 14 with App Router
+- **UI Library**: Material-UI (MUI)
+- **State Management**: React Query (TanStack Query)
+- **Language**: TypeScript
+- **Styling**: CSS-in-JS with Material-UI
+
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- Node.js 18+
-- PostgreSQL 12+
-- pnpm (recommended) or npm
+- **Node.js** 18+
+- **PostgreSQL** 12+
+- **pnpm** (recommended) or npm
 
-### Installation
+### Installation & Setup
 
 1. **Clone the repository:**
 
@@ -64,25 +74,30 @@ cd highlevel
 2. **Install dependencies:**
 
 ```bash
+# Install backend dependencies
 pnpm install
+
+# Install frontend dependencies
+cd frontend
+pnpm install
+cd ..
 ```
 
 3. **Setup environment variables:**
 
-```bash
-cp .env.example .env
-```
-
-Edit `.env` file with your database credentials:
+Create a `.env` file in the root directory with your database credentials:
 
 ```env
+JWT_ACCESS_SECRET='Ujb8GNsH1Z1GhrW8A/HiOXX7BO2tpp853B8lpk3Ul4E='
+JWT_REFRESH_SECRET='Yu0PNkoSdDYdVw6OS5ipxdBJEOMOFn8yvVoiQy2vR/0='
+
 DB_HOST=localhost
 DB_PORT=5432
 DB_USERNAME=postgres
 DB_PASSWORD=postgres
-DB_NAME=highlevel_dev
-JWT_ACCESS_SECRET=your-super-secret-jwt-key
-JWT_REFRESH_SECRET=your-super-secret-refresh-key
+DB_NAME=goodwill_dev
+JWT_ACCESS_SECRET=your-super-secret-jwt-key-here
+JWT_REFRESH_SECRET=your-super-secret-refresh-key-here
 NODE_ENV=development
 ```
 
@@ -93,21 +108,59 @@ NODE_ENV=development
 createdb highlevel_dev
 
 # Run migrations
-npm run migration:run
+pnpm run migration:run
 ```
 
-5. **Start the application:**
+### 🏃‍♂️ Running the Application
+
+#### Option 1: Run Both Services Simultaneously
 
 ```bash
-# Development mode
-npm run start:dev
-
-# Production mode
-npm run build
-npm run start:prod
+# Start both backend and frontend in development mode
+pnpm run dev
 ```
 
-The API will be available at `http://localhost:3000`
+This will start:
+
+- **Backend**: `http://localhost:3000` (API server)
+- **Frontend**: `http://localhost:3001` (Web application)
+
+#### Option 2: Run Services Separately
+
+**Terminal 1 - Backend:**
+
+```bash
+# Start backend development server
+pnpm run start:dev
+```
+
+**Terminal 2 - Frontend:**
+
+```bash
+# Start frontend development server
+cd frontend
+pnpm run dev
+```
+
+### 🌐 Access the Application
+
+- **Web Application**: http://localhost:3001
+- **API Documentation**: http://localhost:3000 (backend API)
+
+### 🔑 Initial Setup
+
+1. **Create your first account**: Navigate to http://localhost:3001 and sign up
+2. **Create a workspace**: Your workspace will be created automatically during signup
+3. **Add contacts**: Start managing your contacts through the web interface
+4. **Explore features**: Dashboard, contacts, workspace management, and more!
+
+### 📱 Application Features
+
+- **Dashboard**: Overview of contacts and recent activities
+- **Contacts Management**: Create, edit, delete, and search contacts
+- **Workspace Settings**: Manage workspace details and team members
+- **Contact Events**: Log and track all contact interactions
+- **Responsive Design**: Works on desktop, tablet, and mobile devices
 
 ## 📚 API Documentation
 
@@ -225,40 +278,77 @@ curl -X POST http://localhost:3000/contact-events \
 ### Project Structure
 
 ```
-src/
-├── auth/           # Authentication logic
-├── users/          # User management
-├── workspace/      # Multi-tenant workspace management
-├── contacts/       # Contact CRUD operations
-├── contact-events/ # Activity logging
-├── guards/         # Authentication guards
-├── decorators/     # Custom decorators
-├── migrations/     # Database migrations
-└── interfaces/     # TypeScript interfaces
+highlevel/
+├── src/                    # Backend source code
+│   ├── auth/              # Authentication logic
+│   ├── users/             # User management
+│   ├── workspace/         # Multi-tenant workspace management
+│   ├── contacts/          # Contact CRUD operations
+│   ├── contact-events/    # Activity logging
+│   ├── guards/            # Authentication guards
+│   ├── decorators/        # Custom decorators
+│   ├── migrations/        # Database migrations
+│   └── interfaces/        # TypeScript interfaces
+├── frontend/              # Frontend application
+│   ├── src/
+│   │   ├── app/          # Next.js app router pages
+│   │   ├── components/   # Reusable React components
+│   │   ├── hooks/        # Custom React hooks
+│   │   ├── context/      # React context providers
+│   │   ├── lib/          # Utility libraries (API client)
+│   │   └── types/        # TypeScript type definitions
+│   └── public/           # Static assets
+├── docs/                 # Documentation files
+├── package.json          # Backend dependencies
+└── README.md             # This file
 ```
 
 ## 🚦 Development
 
 ### Available Scripts
 
+````bash
+docker compose up -d
+
+#### Backend Scripts
+
 ```bash
 # Development
-npm run start:dev      # Start with hot reload
-npm run start:debug    # Start in debug mode
+pnpm run start:dev      # Start backend with hot reload
+pnpm run start:debug    # Start backend in debug mode
 
 # Building
-npm run build          # Build for production
-npm run start:prod     # Start production server
+pnpm run build          # Build backend for production
+pnpm run start:prod     # Start production backend server
 
 # Database
-npm run migration:run      # Run migrations
-npm run migration:revert   # Revert migrations
-npm run migration:generate # Generate new migration
+pnpm run migration:run      # Run migrations
+pnpm run migration:revert   # Revert migrations
+pnpm run migration:generate # Generate new migration
 
 # Testing
-npm run test          # Unit tests
-npm run test:e2e      # End-to-end tests
-npm run test:cov      # Test coverage
+pnpm run test          # Unit tests
+pnpm run test:e2e      # End-to-end tests
+pnpm run test:cov      # Test coverage
+````
+
+#### Frontend Scripts
+
+```bash
+# Development (run from frontend/ directory)
+cd frontend
+pnpm run dev           # Start frontend development server
+pnpm run build         # Build frontend for production
+pnpm run start         # Start production frontend server
+pnpm run lint          # Run ESLint
+pnpm run type-check    # Run TypeScript type checking
+```
+
+#### Combined Scripts
+
+```bash
+# Run both backend and frontend together
+pnpm run dev           # Start both services in development mode
 ```
 
 ### Database Migrations
@@ -300,6 +390,91 @@ npm run migration:revert
 3. Commit your changes (`git commit -am 'Add new feature'`)
 4. Push to the branch (`git push origin feature/new-feature`)
 5. Create a Pull Request
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+#### Port Already in Use
+
+If you get a "port already in use" error:
+
+```bash
+# Find and kill process using port 3000 (backend)
+lsof -ti:3000 | xargs kill -9
+
+# Find and kill process using port 3001 (frontend)
+lsof -ti:3001 | xargs kill -9
+```
+
+#### Database Connection Issues
+
+1. **PostgreSQL not running:**
+
+   ```bash
+   # Start PostgreSQL (macOS with Homebrew)
+   brew services start postgresql
+
+   # Start PostgreSQL (Ubuntu/Debian)
+   sudo systemctl start postgresql
+   ```
+
+2. **Database doesn't exist:**
+
+   ```bash
+   # Create the database
+   createdb highlevel_dev
+   ```
+
+3. **Permission denied:**
+   ```bash
+   # Connect as postgres user and create database
+   sudo -u postgres createdb highlevel_dev
+   ```
+
+#### Migration Issues
+
+```bash
+# If migrations fail, reset and try again
+pnpm run migration:revert
+pnpm run migration:run
+```
+
+#### Frontend Build Issues
+
+```bash
+# Clear Next.js cache
+cd frontend
+rm -rf .next
+pnpm run build
+```
+
+#### Dependencies Issues
+
+```bash
+# Clean install all dependencies
+rm -rf node_modules package-lock.json pnpm-lock.yaml
+rm -rf frontend/node_modules frontend/package-lock.json frontend/pnpm-lock.yaml
+pnpm install
+cd frontend && pnpm install
+```
+
+### Environment Variables
+
+Make sure your `.env` file is properly configured:
+
+- Database credentials match your PostgreSQL setup
+- JWT secrets are secure and unique
+- NODE_ENV is set appropriately
+
+### Getting Help
+
+If you're still having issues:
+
+1. Check the console logs for specific error messages
+2. Verify all prerequisites are installed and running
+3. Ensure database migrations have been run successfully
+4. Check that all environment variables are set correctly
 
 ## 📄 License
 
