@@ -6,41 +6,43 @@ import {
   UpdateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
-import { Exclude } from 'class-transformer';
 import { Workspace } from '../workspace/workspace.entity';
+import { ContactEvent } from '../contact-events/contact-event.entity';
 
-@Entity('users')
-export class User {
+@Entity('contacts')
+export class Contact {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ unique: true })
-  email: string;
-
   @Column()
-  @Exclude()
-  password: string;
-
-  @Column({ nullable: true })
   name: string;
 
   @Column({ nullable: true })
-  profilePicture: string;
+  phone: string;
 
   @Column({ nullable: true })
-  @Exclude()
-  refreshToken: string;
+  email: string;
 
-  @Column({ nullable: false, default: true })
-  isActive: boolean;
+  @Column({ nullable: true })
+  address: string;
 
-  @Column({ nullable: false })
+  @Column({ type: 'text', nullable: true })
+  notes: string;
+
+  @Column({ nullable: true })
+  lastContactedAt: Date;
+
+  @Column()
   workspaceId: string;
 
-  @ManyToOne(() => Workspace, (workspace) => workspace.users)
+  @ManyToOne(() => Workspace)
   @JoinColumn({ name: 'workspaceId' })
   workspace: Workspace;
+
+  @OneToMany(() => ContactEvent, (event) => event.contact)
+  events: ContactEvent[];
 
   @CreateDateColumn()
   createdAt: Date;

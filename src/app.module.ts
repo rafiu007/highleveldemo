@@ -4,6 +4,9 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './users/user.module';
 import { AuthModule } from './auth/auth.module';
 import { GuardsModule } from './guards/guards.module';
+import { WorkspaceModule } from './workspace/workspace.module';
+import { ContactModule } from './contacts/contact.module';
+import { ContactEventModule } from './contact-events/contact-event.module';
 
 @Module({
   imports: [
@@ -16,7 +19,7 @@ import { GuardsModule } from './guards/guards.module';
       port: parseInt(process.env.DB_PORT || '5432'),
       username: process.env.DB_USERNAME || 'postgres',
       password: process.env.DB_PASSWORD || 'postgres',
-      database: process.env.DB_NAME || 'highlevel_dev',
+      database: process.env.DB_NAME || 'goodwill_dev',
       autoLoadEntities: true,
       synchronize: process.env.NODE_ENV !== 'production',
       logging: process.env.NODE_ENV === 'development',
@@ -25,6 +28,9 @@ import { GuardsModule } from './guards/guards.module';
     UserModule,
     AuthModule,
     GuardsModule,
+    WorkspaceModule,
+    ContactModule,
+    ContactEventModule,
   ],
   providers: [],
 })

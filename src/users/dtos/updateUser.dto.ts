@@ -1,16 +1,20 @@
-import { IsString, IsOptional, MinLength } from 'class-validator';
+import { IsOptional, IsString, IsUUID, MinLength } from 'class-validator';
 
 export class UpdateUserDto {
-  @IsString()
   @IsOptional()
-  name?: string;
+  @IsString()
+  readonly name?: string;
 
-  @IsString()
   @IsOptional()
-  profilePicture?: string;
+  @IsString()
+  readonly profilePicture?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   @MinLength(6)
-  password?: string;
+  readonly password?: string;
+
+  @IsOptional()
+  @IsUUID()
+  readonly workspaceId?: string;
 }

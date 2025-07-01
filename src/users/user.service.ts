@@ -18,7 +18,10 @@ export class UserService {
   }
 
   async findById(id: string): Promise<User> {
-    const user = await this.userRepository.findOne({ where: { id } });
+    const user = await this.userRepository.findOne({
+      where: { id },
+      relations: ['workspace'],
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -34,6 +37,7 @@ export class UserService {
       name: createUserDto.name,
       profilePicture: createUserDto.profilePicture,
       refreshToken: createUserDto.refreshToken,
+      workspaceId: createUserDto.workspaceId,
       isActive: true,
     });
 
@@ -46,6 +50,7 @@ export class UserService {
     const updateData: Partial<User> = {
       name: updateUserDto.name || user.name,
       profilePicture: updateUserDto.profilePicture || user.profilePicture,
+      workspaceId: updateUserDto.workspaceId || user.workspaceId,
     };
 
     if (updateUserDto.password) {

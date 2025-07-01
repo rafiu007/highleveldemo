@@ -1,30 +1,35 @@
 import {
   IsEmail,
   IsNotEmpty,
-  IsString,
   IsOptional,
+  IsString,
+  IsUUID,
   MinLength,
 } from 'class-validator';
 
 export class CreateUserDto {
+  @IsNotEmpty()
   @IsEmail()
-  @IsNotEmpty()
-  email: string;
+  readonly email: string;
 
-  @IsString()
   @IsNotEmpty()
+  @IsString()
   @MinLength(6)
-  password: string;
+  readonly password: string;
 
-  @IsString()
   @IsOptional()
-  name?: string;
+  @IsString()
+  readonly name?: string;
 
-  @IsString()
   @IsOptional()
-  profilePicture?: string;
+  @IsString()
+  readonly profilePicture?: string;
 
-  @IsString()
   @IsOptional()
-  refreshToken?: string;
+  @IsString()
+  readonly refreshToken?: string;
+
+  @IsOptional()
+  @IsUUID()
+  readonly workspaceId?: string;
 }
