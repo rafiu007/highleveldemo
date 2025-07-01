@@ -2,6 +2,8 @@
 
 ## Core Principles
 
+use pnpm for this project
+
 ### 1. Immutable Code Patterns
 
 - Always use `const` instead of `let` when possible
