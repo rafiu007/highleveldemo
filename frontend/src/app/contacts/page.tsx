@@ -1,10 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { Dialog, DialogContent, DialogTitle } from '@mui/material';
+import {
+  Box,
+  Dialog,
+  DialogContent,
+  DialogTitle,
+  Typography,
+} from '@mui/material';
 import { Layout } from '@/components/layout/Layout';
 import { ContactList } from '@/components/contacts/ContactList';
 import { ContactForm } from '@/components/contacts/ContactForm';
+import { ContactHistory } from '@/components/contacts/ContactHistory';
 import { Contact } from '@/types';
 
 export default function ContactsPage() {
@@ -75,10 +82,14 @@ export default function ContactsPage() {
       >
         <DialogTitle>Contact History - {selectedContact?.name}</DialogTitle>
         <DialogContent>
-          {/* Contact history component would go here */}
-          <p>
-            Contact history for {selectedContact?.name} would be displayed here.
-          </p>
+          {selectedContact && (
+            <Box>
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="h6">Recent Activity</Typography>
+              </Box>
+              <ContactHistory contactId={selectedContact.id} />
+            </Box>
+          )}
         </DialogContent>
       </Dialog>
     </Layout>

@@ -41,7 +41,30 @@ export type ContactEventType =
   | 'meeting'
   | 'note'
   | 'sms'
-  | 'other';
+  | 'other'
+  | 'created'
+  | 'updated'
+  | 'deleted';
+
+export interface ContactEventMetadata {
+  contactData?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    notes?: string;
+  };
+  changes?: Record<string, { from: unknown; to: unknown }>;
+  updatedFields?: string[];
+  deletedContactData?: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+    notes?: string;
+    lastContactedAt?: string;
+  };
+}
 
 export interface ContactEvent {
   id: string;
@@ -51,6 +74,8 @@ export interface ContactEvent {
   contactId: string;
   workspaceId: string;
   createdBy: string;
+  isSystemGenerated?: boolean;
+  metadata?: ContactEventMetadata;
   contact?: Contact;
   workspace?: Workspace;
   createdAt: string;
