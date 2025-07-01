@@ -43,13 +43,35 @@ export const LoginForm: React.FC = () => {
     try {
       setLoading(true);
       setError('');
+      console.log('LoginForm: Starting login process');
+
       await login(data.email, data.password);
+      console.log('LoginForm: Login successful, redirecting to dashboard');
+
       router.push('/dashboard');
     } catch (error: unknown) {
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : 'Login failed. Please try again.';
+      console.error('LoginForm: Login failed:', error);
+
+      let errorMessage = 'Login failed. Please try again.';
+
+      if (error && typeof error === 'object' && 'response' in error) {
+        const axiosError = error as {
+          response?: { data?: { message?: string }; status?: number };
+        };
+        if (axiosError.response?.data?.message) {
+          errorMessage = axiosError.response.data.message;
+        } else if (axiosError.response?.status === 401) {
+          errorMessage = 'Invalid email or password';
+        } else if (
+          axiosError.response?.status &&
+          axiosError.response.status >= 500
+        ) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      } else if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
       setError(errorMessage);
     } finally {
       setLoading(false);

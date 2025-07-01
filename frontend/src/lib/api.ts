@@ -1,6 +1,27 @@
 import axios from 'axios';
 
+// Use localhost since backend and frontend are on the same device
 const API_BASE_URL = 'http://localhost:3000';
+
+// Helper function to get cookie value
+const getCookie = (name: string): string | null => {
+  if (typeof document === 'undefined') return null; // SSR safety
+  const nameEQ = name + '=';
+  const ca = document.cookie.split(';');
+  for (let i = 0; i < ca.length; i++) {
+    let c = ca[i];
+    while (c.charAt(0) === ' ') c = c.substring(1, c.length);
+    if (c.indexOf(nameEQ) === 0) return c.substring(nameEQ.length, c.length);
+  }
+  return null;
+};
+
+// Helper function to delete cookie
+const deleteCookie = (name: string) => {
+  if (typeof document !== 'undefined') {
+    document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;`;
+  }
+};
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
@@ -11,7 +32,7 @@ export const api = axios.create({
 
 // Add token to requests if available
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = getCookie('token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -23,9 +44,11 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/auth/login';
+      deleteCookie('token');
+      deleteCookie('user');
+      if (typeof window !== 'undefined') {
+        window.location.href = '/auth/login';
+      }
     }
     return Promise.reject(error);
   },
