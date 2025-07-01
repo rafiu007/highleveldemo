@@ -1,0 +1,289 @@
+# Cursor Guidelines for Highlevel Backend Project
+
+## Core Principles
+
+### 1. Immutable Code Patterns
+
+- Always use `const` instead of `let` when possible
+- Use `readonly` for object properties that shouldn't change
+- Prefer immutable array/object operations:
+  - Use `[...array, newItem]` instead of `array.push(newItem)`
+  - Use `{ ...object, newProperty: value }` instead of `object.newProperty = value`
+  - Use `array.filter()`, `array.map()`, `array.reduce()` instead of mutating methods
+- For complex state updates, use immutable patterns or libraries like Immer
+
+### 2. Type Safety
+
+- **NEVER use `any` type** - always provide proper types
+- Use strict TypeScript configuration
+- Prefer interfaces over types for object shapes
+- Use union types for constrained values: `type Status = 'active' | 'inactive'`
+- Use generic types for reusable components
+- Always type function parameters and return values explicitly
+- Use `as const` for literal types when needed
+
+### 3. DRY Principles
+
+- Extract common logic into utility functions
+- Create reusable interfaces and types
+- Use inheritance and composition appropriately
+- Avoid code duplication - refactor when you see patterns
+- Create shared constants for magic numbers/strings
+
+## NestJS Specific Guidelines
+
+### 1. Module Structure
+
+- Keep modules focused on single responsibility
+- Use forwardRef() only when absolutely necessary for circular dependencies
+- Export only what's needed from modules
+- Use proper dependency injection patterns
+
+### 2. Service Layer
+
+- Services should be stateless
+- Use dependency injection for all external dependencies
+- Keep business logic in services, not controllers
+- Use proper error handling with NestJS exceptions
+- Make services testable with clear interfaces
+
+### 3. Controller Layer
+
+- Controllers should be thin - delegate to services
+- Use proper HTTP status codes
+- Use DTOs for request/response validation
+- Implement proper error handling
+- Use guards and interceptors appropriately
+
+### 4. Entity/Database Layer
+
+- Use TypeORM decorators properly
+- Define relationships clearly
+- Use migrations for schema changes
+- Never expose sensitive data (use @Exclude decorator)
+- Use proper indexing for performance
+
+## Code Quality Standards
+
+### 1. Function Design
+
+- Functions should do one thing well (Single Responsibility)
+- Keep functions small (ideally < 20 lines)
+- Use descriptive names for functions and variables
+- Avoid deep nesting (use early returns)
+- Use pure functions when possible
+
+### 2. Error Handling
+
+- Use specific exception types from NestJS
+- Provide meaningful error messages
+- Log errors appropriately
+- Handle edge cases explicitly
+- Use try-catch blocks judiciously
+
+### 3. Validation
+
+- Use class-validator decorators for DTOs
+- Validate at the boundary (controllers)
+- Use transformation pipes when needed
+- Provide clear validation error messages
+
+## Design Patterns
+
+### 1. Repository Pattern
+
+- Use TypeORM repositories for data access
+- Keep database logic separate from business logic
+- Use custom repositories for complex queries
+- Abstract database operations behind interfaces
+
+### 2. Factory Pattern
+
+- Use for complex object creation
+- Implement in services when needed
+- Keep creation logic centralized
+
+### 3. Strategy Pattern
+
+- Use for different algorithms/behaviors
+- Implement with NestJS providers
+- Keep strategies testable and focused
+
+### 4. Decorator Pattern
+
+- Use NestJS decorators appropriately
+- Create custom decorators for repeated logic
+- Keep decorators focused and reusable
+
+## Security Guidelines
+
+### 1. Authentication & Authorization
+
+- Always validate JWT tokens
+- Use proper password hashing (bcrypt)
+- Implement rate limiting
+- Validate all inputs
+- Use HTTPS in production
+
+### 2. Data Protection
+
+- Never log sensitive data
+- Use environment variables for secrets
+- Implement proper CORS configuration
+- Sanitize user inputs
+
+## Testing Guidelines
+
+### 1. Unit Tests
+
+- Test business logic thoroughly
+- Use in-memory databases for integration tests
+- Mock external dependencies
+- Test error scenarios
+- Aim for high code coverage
+
+### 2. Test Structure
+
+- Use describe/it blocks clearly
+- Setup and teardown properly
+- Use meaningful test names
+- Test one thing per test case
+
+## Performance Guidelines
+
+### 1. Database Optimization
+
+- Use proper indexing
+- Optimize queries (avoid N+1 problems)
+- Use pagination for large datasets
+- Implement connection pooling
+
+### 2. API Optimization
+
+- Implement caching where appropriate
+- Use compression middleware
+- Optimize payload sizes
+- Implement proper HTTP caching headers
+
+## Code Organization
+
+### 1. File Structure
+
+- Group related files in modules
+- Use consistent naming conventions
+- Keep file sizes reasonable
+- Separate concerns properly
+
+### 2. Import Organization
+
+- Group imports: Node modules, NestJS modules, local modules
+- Use absolute imports when beneficial
+- Keep imports clean and organized
+
+## Documentation Standards
+
+### 1. Code Comments
+
+- Write comments for complex business logic
+- Document public APIs
+- Use JSDoc for functions and classes
+- Explain "why" not "what"
+
+### 2. API Documentation
+
+- Use Swagger/OpenAPI decorators
+- Document all endpoints
+- Provide examples for complex requests
+- Keep documentation up to date
+
+## Environment & Configuration
+
+### 1. Environment Variables
+
+- Use configuration service for all configs
+- Validate environment variables on startup
+- Use different configs for different environments
+- Never commit secrets to version control
+
+### 2. Logging
+
+- Use structured logging
+- Log at appropriate levels
+- Include correlation IDs
+- Don't log sensitive information
+
+## Git & Version Control
+
+### 1. Commit Messages
+
+- Use conventional commit format
+- Be descriptive about changes
+- Reference issues when applicable
+- Keep commits atomic
+
+### 2. Code Reviews
+
+- Review for all the above guidelines
+- Check for security issues
+- Verify tests are included
+- Ensure documentation is updated
+
+## Examples
+
+### Good Immutable Code:
+
+```typescript
+// ✅ Good - Immutable
+const updateUser = (user: User, updates: Partial<User>): User => {
+  return { ...user, ...updates, updatedAt: new Date() };
+};
+
+const addItemToArray = (
+  items: readonly Item[],
+  newItem: Item,
+): readonly Item[] => {
+  return [...items, newItem];
+};
+```
+
+### Bad Mutable Code:
+
+```typescript
+// ❌ Bad - Mutable
+const updateUser = (user: User, updates: Partial<User>): User => {
+  user.name = updates.name;
+  user.updatedAt = new Date();
+  return user;
+};
+
+const addItemToArray = (items: Item[], newItem: Item): Item[] => {
+  items.push(newItem);
+  return items;
+};
+```
+
+### Good Type Safety:
+
+```typescript
+// ✅ Good - Type safe
+interface UserRepository {
+  findById(id: string): Promise<User | null>;
+  create(userData: CreateUserDto): Promise<User>;
+}
+
+const userStatuses = ['active', 'inactive', 'pending'] as const;
+type UserStatus = (typeof userStatuses)[number];
+```
+
+### Bad Type Safety:
+
+```typescript
+// ❌ Bad - Not type safe
+const findUser = (id: any): any => {
+  // Implementation
+};
+
+let status: any = 'active';
+```
+
+Remember: These guidelines ensure code quality, maintainability, and consistency across the project. Always prioritize readability and type safety over clever code.
