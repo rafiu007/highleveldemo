@@ -1,0 +1,179 @@
+name: Deploy to AWS EC2
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  EC2_USERNAME: ubuntu # or ec2-user depending on your AMI
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: ${{ github.event.inputs.environment }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Fetch all history
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+          run_install: false
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: |
+          echo "Current directory contents:"
+          ls -la
+          echo "Attempting installation..."
+          pnpm install --no-frozen-lockfile
+
+      - name: Run tests
+        run: pnpm test
+
+      - name: Build application
+        run: pnpm build
+
+      - name: Set target EC2 IP
+        id: set-ip
+        run: |
+          if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+            echo "ec2_ip=${{ secrets.EC2_IP_PRODUCTION }}" >> $GITHUB_OUTPUT
+          else
+            echo "ec2_ip=${{ secrets.EC2_IP_STAGING }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup EC2 environment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ steps.set-ip.outputs.ec2_ip }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Update package list
+            sudo apt-get update
+
+            # Install AWS CLI v2
+            if ! command -v aws &> /dev/null; then
+              sudo apt-get install -y unzip curl
+              curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+              unzip awscliv2.zip
+              sudo ./aws/install
+              rm -rf aws awscliv2.zip
+            fi
+
+            # Install Node.js if not installed
+            if ! command -v node &> /dev/null; then
+              curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+              sudo apt-get install -y nodejs
+            fi
+
+            # Install pnpm if not installed
+            if ! command -v pnpm &> /dev/null; then
+              sudo npm install -g pnpm
+            fi
+
+            # Install PM2 if not installed
+            if ! command -v pm2 &> /dev/null; then
+              sudo npm install -g pm2
+            fi
+
+            # Create deployment directory if it doesn't exist
+            mkdir -p /home/${{ env.EC2_USERNAME }}/backend
+
+            # Configure AWS CLI region
+            aws configure set region eu-north-1
+
+            # Create env file from Secrets Manager with proper format conversion
+            if [ "${{ github.event.inputs.environment }}" = "production" ]; then
+              SECRET_NAME="production-goodwill"
+            else
+              SECRET_NAME="staging-goodwill"
+            fi
+
+            # Get secrets and convert from JSON to .env format
+            aws secretsmanager get-secret-value \
+              --secret-id $SECRET_NAME \
+              --query 'SecretString' \
+              --output text | \
+            jq -r 'to_entries | map("\(.key)=\(.value)") | .[]' > /home/${{ env.EC2_USERNAME }}/backend/.env
+
+            # Verify .env file was created properly
+            if [ ! -s /home/${{ env.EC2_USERNAME }}/backend/.env ]; then
+              echo "Failed to create .env file"
+              exit 1
+            fi
+
+      - name: Deploy to EC2
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ steps.set-ip.outputs.ec2_ip }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Stop existing PM2 process if it exists
+            pm2 stop backend || true
+
+            # Clean up old deployment
+            rm -rf /home/${{ env.EC2_USERNAME }}/backend/*
+
+      - name: Copy files to EC2
+        uses: appleboy/scp-action@master
+        with:
+          host: ${{ steps.set-ip.outputs.ec2_ip }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: 'dist/,package.json,pnpm-lock.yaml,.env.*'
+          target: '/home/${{ env.EC2_USERNAME }}/backend'
+          strip_components: 0
+
+      - name: Start application
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ steps.set-ip.outputs.ec2_ip }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            cd /home/${{ env.EC2_USERNAME }}/backend
+
+            # Install production dependencies
+            pnpm install --prod
+
+            # Start application with PM2 and save configuration
+            pm2 start dist/main.js --name backend
+            pm2 save
+
+            # Setup PM2 to start on system boot
+            pm2 startup | tail -n 1 | bash
+
+      - name: Verify deployment
+        uses: appleboy/ssh-action@master
+        with:
+          host: ${{ steps.set-ip.outputs.ec2_ip }}
+          username: ${{ env.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            # Check if the application is running
+            if pm2 show backend | grep -q "online"; then
+              echo "Application deployed successfully"
+            else
+              echo "Deployment failed"
+              exit 1
+            fi
