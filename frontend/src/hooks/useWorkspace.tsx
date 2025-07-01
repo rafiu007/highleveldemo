@@ -66,6 +66,7 @@ export const useWorkspace = () => {
       id: string;
       name?: string;
       description?: string;
+      isActive?: boolean;
     }) => workspaceApi.update(id, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['workspaces'] });

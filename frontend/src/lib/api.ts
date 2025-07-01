@@ -75,8 +75,10 @@ export const workspaceApi = {
   getById: (id: string) => api.get(`/workspaces/${id}`),
   create: (data: { name: string; description?: string }) =>
     api.post('/workspaces', data),
-  update: (id: string, data: { name?: string; description?: string }) =>
-    api.patch(`/workspaces/${id}`, data),
+  update: (
+    id: string,
+    data: { name?: string; description?: string; isActive?: boolean },
+  ) => api.patch(`/workspaces/${id}`, data),
   delete: (id: string) => api.delete(`/workspaces/${id}`),
   getDashboard: (id: string) => api.get(`/workspaces/${id}/dashboard`),
 };
